@@ -15,21 +15,16 @@ warnings.filterwarnings('ignore')
 class TabNetStrokeModel:
     """
     Wrapper wokół pytorch_tabnet.TabNetClassifier dla przewidywania udarów.
-    
-    Obsługuje:
-    - Inicjalizację modelu z hiperparametrami
-    - Trening z early stopping
-    - Predykcje
-    - Zapisywanie/wczytywanie modelu
+    Zawiera:
+    -Inicjalizację modelu z hiperparametrami
+    -Trening z early stopping
+    -Predykcje
+    -Zapisywanie/wczytywanie modelu
     """
     
     def __init__(self, device_name: str = "auto", seed: int = 42):
         """
         Inicjalizuje model TabNet.
-        
-        Args:
-            device_name: "cpu" lub "cuda" lub "auto" (autodetekt)
-            seed: Random seed do reprodukowalności
         """
         self.seed = seed
         self.device_name = device_name
@@ -87,11 +82,6 @@ class TabNetStrokeModel:
         Returns:
             Skonfigurowany model TabNetClassifier
         """
-        
-        print("\n" + "="*70)
-        print("BUDOWANIE MODELU TabNet")
-        print("="*70)
-        
         self.virtual_batch_size = virtual_batch_size
         
         self.model = TabNetClassifier(
@@ -109,17 +99,17 @@ class TabNetStrokeModel:
             optimizer_params=dict(lr=2e-2)
         )
         
-        print(f"✓ Model TabNet stworzony")
-        print(f"\n📋 Architektura:")
-        print(f"  • Decision steps (iteracje feature selection): {n_steps}")
-        print(f"  • Width (neurony na warstwę): {width}")
-        print(f"  • Sparsity regularization (λ): {lambda_sparse}")
-        print(f"  • Independent GLUs: {n_independent}")
-        print(f"  • Shared GLUs: {n_shared}")
-        print(f"  • Mask type: {mask_type}")
-        print(f"  • Virtual batch size: {virtual_batch_size}")
-        print(f"  • Input features: {n_features}")
-        print(f"  • Output classes: {n_classes}")
+        print(f"Model TabNet stworzony")
+        print(f"\nArchitektura:")
+        print(f"    Decision steps: {n_steps}")
+        print(f"    Width (neurony na warstwę): {width}")
+        print(f"    Sparsity regularization (λ): {lambda_sparse}")
+        print(f"    Independent GLUs: {n_independent}")
+        print(f"    Shared GLUs: {n_shared}")
+        print(f"    Mask type: {mask_type}")
+        print(f"    Virtual batch size: {virtual_batch_size}")
+        print(f"    Input features: {n_features}")
+        print(f"    Output classes: {n_classes}")
         
         return self.model
     
@@ -141,26 +131,7 @@ class TabNetStrokeModel:
         Early stopping: zatrzyma trening jeśli walidacyjna metrika nie poprawia się
         przez 'patience' epok. Zapobiega overfittingowi na małych zbiorach danych.
         
-        Args:
-            X_train: Dane treningowe (n_samples, n_features)
-            y_train: Etykiety treningowe (n_samples,)
-            X_val: Dane walidacyjne
-            y_val: Etykiety walidacyjne
-            max_epochs: Maksymalna liczba epok
-            batch_size: Rozmiar batcha
-            learning_rate: Learning rate optymalizatora (Adam)
-            patience: Liczba epok bez poprawy przed zatrzymaniem
-            verbose: Czy wypisywać progress
-            
-        Returns:
-            Historia treningu (słownik)
         """
-        
-        print("\n" + "="*70)
-        print("TRENING MODELU")
-        print("="*70)
-        
-        # Convert to numpy if needed
         if isinstance(X_train, pd.DataFrame):
             X_train = X_train.values
         if isinstance(X_val, pd.DataFrame):
@@ -173,7 +144,6 @@ class TabNetStrokeModel:
         # Update learning rate
         self.model.optimizer_params = dict(lr=learning_rate)
         
-        # Fit modelu
         self.model.fit(
             X_train=X_train,
             y_train=y_train,
@@ -183,29 +153,23 @@ class TabNetStrokeModel:
             patience=patience,
             batch_size=batch_size,
             virtual_batch_size=self.virtual_batch_size,
-            weights=1,                    # 1 = Automated sampling for class imbalance
+            weights=1,                    
             drop_last=False
         )
         
-        print("\n✓ Trening zakończony")
+        print("\nTrening zakończony")
         
         return self._get_training_history()
     
     def _get_training_history(self) -> dict:
         """
-        Extrahuje historię treningu z modelu.
-        
-        Returns:
-            Słownik z loss i metrykami
+        Zwraca historię treningu z modelu.
         """
         history = {
             'loss': [],
             'val_loss': [],
             'val_auc': []
         }
-        
-        # pytorch_tabnet nie przechowuje pełnej historii w łatwy sposób
-        # W praktyce wykorzystujemy history.best_epoch
         if hasattr(self.model, 'history'):
             history = self.model.history
         
@@ -214,12 +178,6 @@ class TabNetStrokeModel:
     def predict(self, X: np.ndarray) -> np.ndarray:
         """
         Predykcja klasy (0 lub 1).
-        
-        Args:
-            X: Dane wejściowe (n_samples, n_features)
-            
-        Returns:
-            Predykcje klas (n_samples,)
         """
         if isinstance(X, pd.DataFrame):
             X = X.values
@@ -229,12 +187,6 @@ class TabNetStrokeModel:
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
         """
         Predykcja prawdopodobieństw.
-        
-        Args:
-            X: Dane wejściowe (n_samples, n_features)
-            
-        Returns:
-            Prawdopodobieństwa (n_samples, 2) - [P(class=0), P(class=1)]
         """
         if isinstance(X, pd.DataFrame):
             X = X.values
@@ -243,26 +195,15 @@ class TabNetStrokeModel:
     
     def get_feature_importance(self, X: np.ndarray) -> pd.DataFrame:
         """
-        Zwraca ważność cech (feature importance from TabNet masks).
-        
-        TabNet automatycznie wybiera które cechy są ważne dzięki maskom.
-        Ta metoda extrahuje te informacje.
-        
-        Args:
-            X: Dane wejściowe (do obliczenia importance)
-            
-        Returns:
-            DataFrame z feature importance
+        Zwraca ważność cech (feature importance).
         """
         if isinstance(X, pd.DataFrame):
             feature_names = X.columns.tolist()
             X = X.values
         else:
             feature_names = [f"feature_{i}" for i in range(X.shape[1])]
-        
-        # TabNet przechowuje importance w explain()
         masks = self.model.explain(X)
-        importance = masks[0].mean(axis=0)  # Średnia wichtość po wszystkich próbkach
+        importance = masks[0].mean(axis=0) 
         
         # Normalizujemy do [0, 1]
         importance = importance / importance.sum()
@@ -277,57 +218,26 @@ class TabNetStrokeModel:
     def save_model(self, filepath: str) -> None:
         """
         Zapisuje model do pliku.
-        
-        Args:
-            filepath: Ścieżka do pliku
         """
         if self.model is None:
             raise ValueError("Model nie został wytrenowany!")
         
         self.model.save_model(filepath)
-        print(f"✓ Model zapisany do: {filepath}")
+        print(f"Model zapisany do: {filepath}")
     
     def load_model(self, filepath: str) -> None:
         """
         Wczytuje model z pliku.
-        
-        Args:
-            filepath: Ścieżka do pliku
         """
         self.model = TabNetClassifier()
         self.model.load_model(filepath)
-        print(f"✓ Model wczytany z: {filepath}")
+        print(f"Model wczytany z: {filepath}")
     
-    def get_model_summary(self) -> None:
-        """
-        Wypisuje podsumowanie modelu.
-        """
-        if self.model is None:
-            print("❌ Model nie został jeszcze wytrenowany!")
-            return
-        
-        print("\n" + "="*70)
-        print("PODSUMOWANIE MODELU")
-        print("="*70)
-        print(f"✓ Model TabNet")
-        print(f"✓ Status: {'Wytrenowany' if hasattr(self.model, 'history') else 'Niezainicjalizowany'}")
-        if hasattr(self.model, 'n_steps'):
-            print(f"✓ Decision steps: {self.model.n_steps}")
-        print("="*70 + "\n")
 
 
 def evaluate_model(model: TabNetStrokeModel, X: np.ndarray, y: np.ndarray, dataset_name: str = "Dataset") -> dict:
     """
     Ewaluuje model na zbiorze danych.
-    
-    Args:
-        model: Wytrenowany model TabNet
-        X: Dane wejściowe
-        y: Prawdziwe etykiety
-        dataset_name: Nazwa zbioru (do wydruku)
-        
-    Returns:
-        Słownik z metrykami
     """
     if isinstance(X, pd.DataFrame):
         X = X.values
@@ -341,12 +251,5 @@ def evaluate_model(model: TabNetStrokeModel, X: np.ndarray, y: np.ndarray, datas
         'accuracy': accuracy_score(y, y_pred),
         'auc': roc_auc_score(y, y_pred_proba)
     }
-    
-    print(f"\n{'='*70}")
-    print(f"Ewaluacja modelu - {dataset_name}")
-    print(f"{'='*70}")
-    print(f"Accuracy: {metrics['accuracy']:.4f}")
-    print(f"AUC-ROC:  {metrics['auc']:.4f}")
-    print(f"{'='*70}\n")
     
     return metrics
