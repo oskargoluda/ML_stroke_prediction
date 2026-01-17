@@ -1,6 +1,5 @@
 """
-Main training script for stroke prediction model.
-Uruchamia cały pipeline: dane → model → trening → ewaluacja
+Uruchamia cały pipeline: dane -> model -> trening -> ewaluacja
 """
 
 import numpy as np
@@ -11,7 +10,6 @@ from pathlib import Path
 import sys
 import pickle
 
-# Dodaj src do path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from data_preparation import StrokeDataPreparator
@@ -24,27 +22,26 @@ from utils import (
 
 
 def main():
+
     """
-    Główna funkcja - pipeline treningu.
+    Główny pipeline treningu modelu TabNet do przewidywania ryzyka udaru mózgu w 8 krokach:.
+    1. Przygotowanie katalogów
+    2. Wczytanie i przygotowanie danych
+    3. Budowanie modelu TabNet
+    4. Trening modelu
+    5. Ewaluacja na zbiorach train/val/test
+    6. Wizualizacje
+    7. Zapisanie modelu
+    8. Podsumowanie wyników
     """
-    
-    print("\n" + "="*70)
-    print("🏥 PRZEWIDYWANIE RYZYKA UDARU - TABNET")
-    print("="*70 + "\n")
-    
-    # ════════════════════════════════════════════════════════════════════════
-    # KROK 1: Przygotowanie katalogów
-    # ════════════════════════════════════════════════════════════════════════
-    print("Krok 1: Przygotowanie katalogów...")
+    print("przewidywanie ryzyka udaru mózgu - trening modelu TabNet:")
+    print("")
+
+    print("Krok 1: Przygotowanie katalogów")
     dirs = create_directories()
-    print("✓ Katalogi gotowe\n")
-    
-    # ════════════════════════════════════════════════════════════════════════
-    # KROK 2: Wczytanie i przygotowanie danych
-    # ════════════════════════════════════════════════════════════════════════
-    print("Krok 2: Przygotowanie danych...")
-    
-    # Ścieżka do pliku danych
+    print("Katalogi gotowe\n")
+
+    print("Krok 2: Przygotowanie danych")
     data_path = "data/raw/healthcare-dataset-stroke-data.csv"
     
     if not Path(data_path).exists():
@@ -61,44 +58,36 @@ def main():
     # Zapisz informacje o preprocessingu (będą potrzebne do inferencji)
     preparator.save_preprocessing_info(str(dirs["models"] / "preprocessing_info.pkl"))
     
-    # Sprawdź niezbalans klas
-    print("\nNiezbalans klas w zbiorze treningowym:")
+    # Sprawdź rozkład klas
+    print("\rozkład klas w zbiorze treningowym:")
     check_class_imbalance(y_train.values)
     
     n_features = X_train.shape[1]
-    print(f"\n✓ Przygotowanie danych zakończone")
-    print(f"  • Liczba cech: {n_features}")
-    print(f"  • Kształt train: {X_train.shape}")
-    print(f"  • Kształt val: {X_val.shape}")
-    print(f"  • Kształt test: {X_test.shape}\n")
-    
-    # ════════════════════════════════════════════════════════════════════════
-    # KROK 3: Budowanie modelu
-    # ════════════════════════════════════════════════════════════════════════
-    print("Krok 3: Budowanie modelu TabNet...")
+    print(f"\nPrzygotowanie danych zakończone")
+    print(f"    Liczba cech: {n_features}")
+    print(f"    Kształt train: {X_train.shape}")
+    print(f"    Kształt val: {X_val.shape}")
+    print(f"    Kształt test: {X_test.shape}\n")
+
+    print("Krok 3: Budowanie modelu TabNet")
     
     model = TabNetStrokeModel(device_name="auto", seed=42)
-    
     # Hiperparametry TabNet
-    # Te parametry można tunować dla lepszych wyników
     model.build_model(
         n_features=n_features,
-        n_classes=2,
-        n_steps=5,                    # Liczba iteracyjnych kroków (main hyperparameter)
+        n_classes=2,                  # Dwie klasy: udar / brak udaru
+        n_steps=4,                    # Liczba iteracyjnych kroków (main hyperparameter)
         n_independent=2,              # Niezależne neurony w każdym kroku
         n_shared=2,                   # Wspólne neurony między krokami
         width=128,                    # Szerokość warstw (liczba neuronów)
-        virtual_batch_size=128,
-        momentum=0.02,
+        virtual_batch_size=128,       
+        momentum=0.02,                
         mask_type="sparsemax",
         lambda_sparse=1e-3            # Regularyzacja sparsity
     )
-    print("✓ Model zbudowany\n")
-    
-    # ════════════════════════════════════════════════════════════════════════
-    # KROK 4: Trening modelu
-    # ════════════════════════════════════════════════════════════════════════
-    print("Krok 4: Trening modelu...")
+    print("Model zbudowany\n")
+
+    print("Krok 4: Trening modelu(moze chwile potrwac)")
     
     history = model.train(
         X_train=X_train.values,
@@ -108,36 +97,33 @@ def main():
         max_epochs=200,
         batch_size=32,
         learning_rate=2e-2,
-        patience=20,                  # Early stopping: jeśli walidacja nie poprawia się przez 20 epok
+        patience=20,                  #jeśli walidacja nie poprawia się przez 20 epok to stop
         verbose=True
     )
     
-    print("✓ Trening zakończony\n")
+    print("Trening zakończony!\n")
     
-    # ════════════════════════════════════════════════════════════════════════
-    # KROK 5: Ewaluacja na zbiorach train/val/test
-    # ════════════════════════════════════════════════════════════════════════
-    print("Krok 5: Ewaluacja modelu...")
+    print("Krok 5: Ewaluacja modelu")
     
-    # Train metrics
+    # Train 
     y_train_pred = model.predict(X_train.values)
     y_train_proba = model.predict_proba(X_train.values)[:, 1]
     train_metrics = calculate_metrics(y_train.values, y_train_pred, y_train_proba)
     print_metrics(train_metrics, "TRAIN")
     
-    # Val metrics
+    # Val 
     y_val_pred = model.predict(X_val.values)
     y_val_proba = model.predict_proba(X_val.values)[:, 1]
     val_metrics = calculate_metrics(y_val.values, y_val_pred, y_val_proba)
     print_metrics(val_metrics, "VAL")
     
-    # Test metrics
+    # Test 
     y_test_pred = model.predict(X_test.values)
     y_test_proba = model.predict_proba(X_test.values)[:, 1]
     test_metrics = calculate_metrics(y_test.values, y_test_pred, y_test_proba)
     print_metrics(test_metrics, "TEST")
     
-    # Zapisz metryki
+    # Zapisywanie metryk
     all_metrics = {
         'train': train_metrics,
         'val': val_metrics,
@@ -145,21 +131,17 @@ def main():
     }
     save_metrics(all_metrics, str(dirs["results"] / "metrics.json"))
     
-    print("✓ Ewaluacja zakończona\n")
+    print("Ewaluacja zakończona\n")
     
-    # ════════════════════════════════════════════════════════════════════════
-    # KROK 6: Wizualizacje
-    # ════════════════════════════════════════════════════════════════════════
-    print("Krok 6: Tworzenie wizualizacji...")
+    print("Krok 6: Tworzenie wizualizacji")
     
-    # Confusion matrix - zbiór testowy
+    # Confusion matrix
     plot_confusion_matrix(
         y_test.values,
         y_test_pred,
         filepath=str(dirs["results"] / "confusion_matrix_test.png")
     )
-    
-    # ROC curve - zbiór testowy
+    # ROC curve
     plot_roc_curve(
         y_test.values,
         y_test_proba,
@@ -168,13 +150,10 @@ def main():
     
     # Feature importance
     feature_importance = model.get_feature_importance(X_test.values)
-    print("\n" + "="*70)
-    print("WAŻNOŚĆ CECH (Feature Importance)")
-    print("="*70)
+    print("\n")
+    print("ważność cech:")
     print(feature_importance.to_string(index=False))
     print()
-    
-    # Wizualizuj feature importance
     plt.figure(figsize=(10, 6))
     sns.barplot(
         data=feature_importance.head(10),
@@ -187,52 +166,43 @@ def main():
     plt.ylabel('Feature', fontsize=12)
     plt.tight_layout()
     plt.savefig(str(dirs["results"] / "feature_importance.png"), dpi=300, bbox_inches='tight')
-    print(f"✓ Feature importance saved to: {dirs['results'] / 'feature_importance.png'}")
+    print(f"wykres waznosci cech zapisany do: {dirs['results'] / 'feature_importance.png'}")
     plt.show()
     
-    # Classification report
     print_classification_report(y_test.values, y_test_pred, "TEST SET")
     
-    print("✓ Wizualizacje gotowe\n")
+    print("Wizualizacje gotowe\n")
     
-    # ════════════════════════════════════════════════════════════════════════
-    # KROK 7: Zapisanie modelu
-    # ════════════════════════════════════════════════════════════════════════
-    print("💾 Krok 7: Zapisywanie modelu...")
+
+    print("Krok 7: Zapisywanie modelu")
     
     model.save_model(str(dirs["models"] / "tabnet_stroke_model.pkl"))
     
-    # Zapisz feature names do later use
     with open(str(dirs["models"] / "feature_names.pkl"), 'wb') as f:
         pickle.dump(preparator.feature_names, f)
     
-    print("✓ Model zapisany\n")
+    print("Model zapisany\n")
     
-    # ════════════════════════════════════════════════════════════════════════
-    # PODSUMOWANIE
-    # ════════════════════════════════════════════════════════════════════════
-    print("\n" + "="*70)
-    print("TRENING ZAKOŃCZONY POMYŚLNIE!")
-    print("="*70)
-    print(f"\n📊 Wyniki na zbiorze TEST:")
-    print(f"  • Accuracy: {test_metrics['accuracy']:.4f}")
-    print(f"  • Precision: {test_metrics['precision']:.4f}")
-    print(f"  • Recall: {test_metrics['recall']:.4f}")
-    print(f"  • F1-Score: {test_metrics['f1']:.4f}")
-    print(f"  • ROC-AUC: {test_metrics['roc_auc']:.4f}")
+
+    print("\n" + "krok 8: Podsumowanie wyników treningu")
+    print("trening zakończony pomyślnie!")
+    print("")
+    print(f"\nWyniki na zbiorze TEST:")
+    print(f"    Accuracy: {test_metrics['accuracy']:.4f}")
+    print(f"    Precision: {test_metrics['precision']:.4f}")
+    print(f"    Recall: {test_metrics['recall']:.4f}")
+    print(f"    F1-Score: {test_metrics['f1']:.4f}")
+    print(f"    ROC-AUC: {test_metrics['roc_auc']:.4f}")
     
-    print(f"\n📁 Pliki zapisane:")
-    print(f"  • Model: {dirs['models'] / 'tabnet_stroke_model.pkl'}")
-    print(f"  • Preprocessing: {dirs['models'] / 'preprocessing_info.pkl'}")
-    print(f"  • Metryki: {dirs['results'] / 'metrics.json'}")
-    print(f"  • Wykresy: {dirs['results']}")
+    print(f"\n Pliki zapisane do:")
+    print(f"    Model: {dirs['models'] / 'tabnet_stroke_model.pkl'}")
+    print(f"    Preprocessing: {dirs['models'] / 'preprocessing_info.pkl'}")
+    print(f"    Metryki: {dirs['results'] / 'metrics.json'}")
+    print(f"    Wykresy: {dirs['results']}")
+
+    print("\nAby sprawdzić wyniki przewidywan modelu dla nowych danych, użyj polecenia:")
+    print("python3 src/infer.py --input example_input.csv")
     
-    print(f"\n💡 Następne kroki:")
-    print(f"  1. Sprawdź wykresy w katalogu {dirs['results']}")
-    print(f"  2. Uruchom python3 src/infer.py --input example_input.csv")
-    print(f"  3. Przejrzyj sprawozdanie w README.md")
-    
-    print("\n" + "="*70 + "\n")
 
 
 if __name__ == "__main__":

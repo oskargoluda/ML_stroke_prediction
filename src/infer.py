@@ -50,7 +50,7 @@ def load_feature_names(filepath: str) -> list:
 def predict_stroke_risk(
     model: TabNetStrokeModel,
     X: np.ndarray,
-    threshold: float = 0.5
+    threshold: float = 0.70
 ) -> pd.DataFrame:
     """
     Robi predykcje na przygotowanych danych.
@@ -58,7 +58,7 @@ def predict_stroke_risk(
     Args:
         model: Wytrenowany model TabNet
         X: Przygotowane dane
-        threshold: Próg decyzyjny (domyślnie 0.5)
+        threshold: Próg decyzyjny (domyślnie 0.70)
         
     Returns:
         DataFrame z predykcjami
@@ -121,8 +121,8 @@ def main():
     parser.add_argument(
         '--threshold',
         type=float,
-        default=0.5,
-        help='Próg decyzyjny (domyślnie 0.5)'
+        default=0.70,
+        help='Próg decyzyjny (domyślnie 0.70)'
     )
     parser.add_argument(
         '--model-path',
