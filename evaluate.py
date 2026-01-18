@@ -293,6 +293,7 @@ def create_evaluation_report(
     X_test: np.ndarray,
     y_test: np.ndarray,
     model: TabNetStrokeModel,
+    feature_names: list = None,
     results_dir: str = "results"
 ) -> None:
     """
@@ -302,6 +303,7 @@ def create_evaluation_report(
         X_test: Dane testowe
         y_test: Etykiety testowe
         model: Wytrenowany model
+        feature_names: Lista nazw cech
         results_dir: Katalog na wyniki
     """
     
@@ -341,7 +343,7 @@ def create_evaluation_report(
     )
     
     # Feature importance
-    feature_importance = model.get_feature_importance(X_test)
+    feature_importance = model.get_feature_importance(X_test, feature_names=feature_names)
     
     plt.figure(figsize=(10, 6))
     sns.barplot(
@@ -416,7 +418,7 @@ def main():
     print(f"✓ Dane testowe przygotowane: {X_test.shape[0]} próbek\n")
     
     # Ewaluacja
-    create_evaluation_report(X_test, y_test, model, args.results_dir)
+    create_evaluation_report(X_test, y_test, model, feature_names=feature_names, results_dir=args.results_dir)
 
 
 if __name__ == "__main__":

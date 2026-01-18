@@ -149,7 +149,7 @@ def main():
     )
     
     # Feature importance
-    feature_importance = model.get_feature_importance(X_test.values)
+    feature_importance = model.get_feature_importance(X_test)
     print("\n")
     print("ważność cech:")
     print(feature_importance.to_string(index=False))
