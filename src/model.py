@@ -193,15 +193,19 @@ class TabNetStrokeModel:
         
         return self.model.predict_proba(X)
     
-    def get_feature_importance(self, X: np.ndarray) -> pd.DataFrame:
+    def get_feature_importance(self, X: np.ndarray, feature_names: list = None) -> pd.DataFrame:
         """
         Zwraca ważność cech (feature importance).
         """
-        if isinstance(X, pd.DataFrame):
-            feature_names = X.columns.tolist()
-            X = X.values
-        else:
-            feature_names = [f"feature_{i}" for i in range(X.shape[1])]
+        if feature_names is None:
+            if isinstance(X, pd.DataFrame):
+                feature_names = X.columns.tolist()
+                X = X.values
+            else:
+                feature_names = [f"feature_{i}" for i in range(X.shape[1])]
+        elif isinstance(X, pd.DataFrame):
+             X = X.values
+
         masks = self.model.explain(X)
         importance = masks[0].mean(axis=0) 
         
