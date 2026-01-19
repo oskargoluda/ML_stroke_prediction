@@ -50,11 +50,11 @@ def main():
 
 
     print("\n4. Wyniki Regresji Logistycznej:")
-    print(f"Accuracy:  {acc:.4f}")
-    print(f"Precision:   {prec:.4f}")
-    print(f"Recall:       {rec:.4f}")
-    print(f"F1-Score:               {f1:.4f}")
-    print(f"ROC-AUC:                {auc:.4f}")
+    print(f"Accuracy:   {acc:.4f}")
+    print(f"Precision:  {prec:.4f}")
+    print(f"Recall:     {rec:.4f}")
+    print(f"F1-Score:   {f1:.4f}")
+    print(f"ROC-AUC:    {auc:.4f}")
     
     print("\nDane z confusion matrix:")
     print(f"Poprawnie wykryte udary: {tp}")
