@@ -9,9 +9,9 @@ python3 src/train.py
 
 Po wpisaniu tego polecenia zostanie zainicjowane szkolenie modelu przewidującego udar (powinno to zająć około 4-5 minut)
 
-Aby sprawdzić działanie modelu należy wypełnić dane do sprawdzenia w pliku example_input.py, przykładowo tak powinno to wyglądać:
+Aby sprawdzić działanie modelu należy wypełnić dane do sprawdzenia w pliku example_input.csv, przykładowo tak powinno to wyglądać:
 
-```python
+```csv
 gender,age,hypertension,heart_disease,ever_married,work_type,Residence_type,avg_glucose_level,bmi,smoking_status
 Female,54,1,0,Yes,Private,Urban,171.23,31.4,never smoked
 Male,45,0,0,Yes,Self-employed,Rural,98.45,27.8,smokes
