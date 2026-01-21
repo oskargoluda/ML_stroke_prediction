@@ -39,7 +39,7 @@ class TabNetStrokeModel:
         self,
         n_features: int,
         n_classes: int = 2,
-        n_steps: int = 5,
+        n_steps: int = 4,
         n_independent: int = 2,
         n_shared: int = 2,
         n_decision_steps: int = 5,
