@@ -66,7 +66,7 @@ class StrokeDataPreparator:
         """
         df = df.copy()
         
-        # Grupy wiekowe
+        #Grupy wiekowe
         df['age_group'] = pd.cut(df['age'], bins=[0, 18, 35, 50, 65, 100],
                                  labels=['child', 'young_adult', 'middle_aged', 'senior', 'elderly'])
         logger.info("Created 'age_group' feature")
@@ -88,7 +88,8 @@ class StrokeDataPreparator:
                                    df['hypertension'] + 
                                    df['heart_disease'] + 
                                    (df['smoking_status'] != 'never smoked').astype(int))
-        
+        df['age_log'] = np.log1p(df['age'])
+        logger.info("Created 'age_log' (log1p of age) feature")
         return df
     
     def encode_categorical_features(self, df, fit=True):
@@ -120,8 +121,8 @@ class StrokeDataPreparator:
         """
         df = df.copy()
         
-        numerical_features = ['age', 'avg_glucose_level', 'bmi']
-        
+        #numerical_features = ['age', 'avg_glucose_level', 'bmi']
+        numerical_features = ['age_log', 'avg_glucose_level', 'bmi']
         if fit:
             df[numerical_features] = self.scaler.fit_transform(df[numerical_features])
             logger.info(f"Fitted scaler on {len(numerical_features)} numerical features")
@@ -176,7 +177,8 @@ class StrokeDataPreparator:
         info = {
             'label_encoders': self.label_encoders,
             'scaler': self.scaler,
-            'numerical_features': ['age', 'avg_glucose_level', 'bmi']
+            #'numerical_features': ['age', 'avg_glucose_level', 'bmi']
+            'numerical_features': ['age_log', 'avg_glucose_level', 'bmi']
         }
         
         Path(filepath).parent.mkdir(parents=True, exist_ok=True)
